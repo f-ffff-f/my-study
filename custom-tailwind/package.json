@@ -1,0 +1,14 @@
+{
+    "name": "@my-study/custom-tailwind",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "yu ganghyeon",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "glob": "^11.0.1"
+    }
+}

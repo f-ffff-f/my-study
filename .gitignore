@@ -1,0 +1,78 @@
+# macOS 시스템 파일
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Node.js / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+yarn.lock
+package-lock.json
+.npm
+.yarn-integrity
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# 환경 변수 파일
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 빌드 결과물
+dist/
+build/
+out/
+.next/
+coverage/
+.nuxt/
+.cache/
+.output/
+
+# IDE / 에디터
+.idea/
+.vscode/
+*.swp
+*.swo
+.vs/
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# 로그 파일
+logs
+*.log
+
+# 테스트 관련
+coverage
+.nyc_output
+
+# TypeScript
+*.tsbuildinfo
+.tscache/
+
+# 기타
+.turbo
+.serverless/
+.fusebox/

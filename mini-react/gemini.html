@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 리액트 엔진 - Fiber 시뮬레이션</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        #root {
+            border: 1px solid #ccc;
+            padding: 20px;
+            min-height: 100px;
+        }
+
+        .clock-container {
+            background-color: #e0e0e0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .title-color-blue {
+            color: navy;
+        }
+
+        .title-color-red {
+            color: crimson;
+        }
+
+        .time-text {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>나만의 작은 리액트 (Fiber 시뮬레이션)</h1>
+    <p>Fiber 아키텍처의 기본 개념(작업 단위 분할, 렌더/커밋 단계 분리)을 흉내 냅니다. 실제 비동기 중단은 구현되지 않았습니다.</p>
+
+    <div id="root"></div>
+
+    <script>
+        console.log("스크립트 시작 (Fiber 버전)")
+
+        // --- Core VDOM Function (동일) ---
+        function createElement(type, props, ...children) {
+            return {
+                type,
+                props: {
+                    ...props,
+                    children: children.flat().map(child =>
+                        typeof child === "object" && child !== null ? child : createTextElement(child)
+                    ),
+                },
+            }
+        }
+
+        function createTextElement(text) {
+            return {
+                type: "TEXT_ELEMENT",
+                props: {
+                    nodeValue: String(text),
+                    children: [],
+                },
+            }
+        }
+
+        // --- Fiber 관련 전역 변수 ---
+        let nextUnitOfWork = null // 다음에 처리할 작업 단위(Fiber)
+        let currentRoot = null    // 현재 DOM에 커밋된 Fiber 트리 루트
+        let wipRoot = null        // 작업 중인(work-in-progress) Fiber 트리 루트
+        let deletions = null      // 커밋 단계에서 삭제할 노드(Fiber) 목록
+
+        // --- Effect Tags (작업 유형 정의) ---
+        const PLACEMENT = 1 // 새로운 노드 추가
+        const UPDATE = 2    // 노드 속성 업데이트
+        const DELETION = 3  // 노드 삭제
+
+        /**
+         * 메인 렌더 함수: 새로운 렌더링/업데이트를 시작합니다.
+         * @param {object} element - 렌더링할 최상위 VDOM 요소
+         * @param {Node} container - 실제 DOM 컨테이너
+         */
+        function render(element, container) {
+            console.log("Render 시작:", element)
+            // 작업 중인 루트(wipRoot) Fiber 생성
+            wipRoot = {
+                dom: container,       // 실제 DOM 노드 참조
+                props: { children: [element] }, // 최상위 요소는 컨테이너의 자식
+                alternate: currentRoot, // 이전 커밋된 루트를 alternate로 설정 (비교용)
+                // type, parent, child, sibling 등은 reconcileChildren에서 설정됨
+            }
+            deletions = [] // 삭제 목록 초기화
+            nextUnitOfWork = wipRoot // 첫 작업 단위 설정
+
+            // 작업 루프 시작 (실제로는 requestIdleCallback 사용)
+            // 여기서는 동기적으로 전체 루프 실행
+            workLoop()
+        }
+
+        /**
+         * 작업 루프: Fiber 단위로 작업을 처리합니다.
+         * (실제 Fiber에서는 브라우저 유휴 시간(idle time)을 확인하고 작업을 중단/재개할 수 있음)
+         */
+        function workLoop() {
+            console.log("Work Loop 시작")
+            while (nextUnitOfWork) {
+                nextUnitOfWork = performUnitOfWork(nextUnitOfWork)
+                // console.log("Next Unit:", nextUnitOfWork ? nextUnitOfWork.type : 'None');
+            }
+            console.log("Work Loop 완료 - Render Phase 끝")
+
+            // 작업 중인 트리(wipRoot)가 완성되면 커밋 단계 실행
+            if (!nextUnitOfWork && wipRoot) {
+                console.log("Commit Phase 시작")
+                commitRoot()
+            }
+        }
+
+        /**
+         * 한 단위의 작업(Fiber)을 처리합니다.
+         * 1. 해당 Fiber에 대한 DOM 노드 생성/업데이트 (아직 DOM에 연결은 안 함)
+         * 2. 자식 요소들에 대한 Fiber 생성 및 연결 (reconcileChildren 호출)
+         * 3. 다음 작업 단위(Fiber)를 결정하여 반환 (자식 -> 형제 -> 부모의 형제 순)
+         * @param {object} fiber - 처리할 현재 Fiber 노드
+         * @returns {object | null} 다음 처리할 Fiber 노드 또는 null
+         */
+        function performUnitOfWork(fiber) {
+            // console.log("Performing work for:", fiber.type || 'Root', fiber);
+
+            // 1. Fiber에 대한 DOM 노드 처리 (필요시 생성/업데이트)
+            if (!fiber.dom) {
+                fiber.dom = createDomElement(fiber) // 실제 DOM 노드 생성 (아직 부모에 연결 안 함)
+            }
+            // createDomElement는 fiber.dom을 설정해주지만, 루트는 이미 설정됨
+
+            // 2. 자식 요소들에 대한 새로운 Fiber 생성 및 연결 (재조정)
+            const elements = fiber.props.children
+            reconcileChildren(fiber, elements)
+
+            // 3. 다음 작업 단위 결정
+            if (fiber.child) {
+                return fiber.child // 자식이 있으면 자식을 다음 작업으로
+            }
+            let nextFiber = fiber
+            while (nextFiber) {
+                if (nextFiber.sibling) {
+                    return nextFiber.sibling // 형제가 있으면 형제를 다음 작업으로
+                }
+                nextFiber = nextFiber.parent // 형제가 없으면 부모로 올라감
+            }
+            return null // 루트까지 올라왔으면 작업 완료
+        }
+
+        /**
+        * 실제 DOM 노드를 생성합니다. (Fiber 버전)
+        * Fiber 객체를 받아 해당하는 DOM 노드를 만듭니다.
+        * @param {object} fiber - 생성할 DOM 노드에 해당하는 Fiber 객체
+        * @returns {Node | null} 생성된 실제 DOM 노드 또는 null
+        */
+        function createDomElement(fiber) {
+            if (!fiber || !fiber.type) return null
+
+            const domType = fiber.type === "TEXT_ELEMENT" ? null : fiber.type
+            const dom = fiber.type === "TEXT_ELEMENT"
+                ? document.createTextNode("") // nodeValue는 updateDomProperties에서 설정
+                : document.createElement(domType)
+
+            // 초기 속성 설정 (이 함수는 DOM 생성만 담당)
+            updateDomProperties(dom, {}, fiber.props)
+
+            // console.log("Fiber: Created DOM node:", dom, "for fiber type:", fiber.type);
+            return dom
+        }
+
+        /**
+         * 자식들을 재조정합니다. (Fiber 버전)
+         * 이전 Fiber(alternate)의 자식들과 새로운 VDOM 자식들을 비교하여
+         * 새로운 자식 Fiber들을 생성하고 effectTag를 설정합니다.
+         * @param {object} wipFiber - 현재 작업 중인 부모 Fiber
+         * @param {Array<object>} elements - 새로운 VDOM 자식 요소 배열
+         */
+        function reconcileChildren(wipFiber, elements) {
+            let index = 0
+            // 이전 커밋된 트리에서 현재 Fiber에 해당하는 노드의 첫 번째 자식 Fiber
+            let oldFiber = wipFiber.alternate && wipFiber.alternate.child
+            let prevSibling = null // 이전에 생성한 자식 Fiber (형제 연결용)
+
+            // 새로운 자식 요소 배열 또는 이전 자식 Fiber 둘 중 하나라도 존재하면 계속 진행
+            while (index < elements.length || oldFiber != null) {
+                const element = elements[index] // 새로운 VDOM 자식
+                let newFiber = null // 이번에 생성/재사용할 Fiber
+
+                // 비교 로직: 타입이 같은지 확인 (key 비교는 생략)
+                const sameType = oldFiber && element && element.type == oldFiber.type
+
+                if (sameType) {
+                    // 타입이 같으면: UPDATE (속성 변경 가능성)
+                    newFiber = {
+                        type: oldFiber.type,
+                        props: element.props,
+                        dom: oldFiber.dom, // 이전 DOM 노드 재사용
+                        parent: wipFiber,
+                        alternate: oldFiber, // 이전 Fiber 연결
+                        effectTag: UPDATE,
+                    }
+                    // console.log("Reconcile: UPDATE", newFiber);
+                }
+                if (element && !sameType) {
+                    // 타입이 다르고 새 요소가 있으면: PLACEMENT (새 노드 추가)
+                    newFiber = {
+                        type: element.type,
+                        props: element.props,
+                        dom: null, // DOM 노드는 performUnitOfWork에서 생성됨
+                        parent: wipFiber,
+                        alternate: null, // 이전 노드 없음
+                        effectTag: PLACEMENT,
+                    }
+                    // console.log("Reconcile: PLACEMENT", newFiber);
+                }
+                if (oldFiber && !sameType) {
+                    // 타입이 다르고 이전 Fiber가 있으면: DELETION (이전 노드 삭제)
+                    oldFiber.effectTag = DELETION
+                    deletions.push(oldFiber) // 삭제 목록에 추가
+                    // console.log("Reconcile: DELETION", oldFiber);
+                }
+
+                // 다음 비교를 위해 이전 Fiber 리스트를 따라 이동
+                if (oldFiber) {
+                    oldFiber = oldFiber.sibling
+                }
+
+                // 생성된 newFiber를 형제(sibling)로 연결
+                if (index === 0) {
+                    wipFiber.child = newFiber // 첫 번째 자식으로 설정
+                } else if (element && prevSibling) {
+                    prevSibling.sibling = newFiber // 이전 형제의 sibling으로 설정
+                }
+
+                prevSibling = newFiber // 현재 Fiber를 다음 루프의 prevSibling으로
+                index++
+            }
+        }
+
+        // --- Commit Phase Functions ---
+
+        /**
+         * 커밋 단계 진입점: 작업 완료된 Fiber 트리를 실제 DOM에 반영합니다.
+         */
+        function commitRoot() {
+            // 1. 삭제 목록에 있는 노드들 먼저 DOM에서 제거
+            deletions.forEach(commitWork)
+            console.log("Committed Deletions:", deletions.length)
+
+            // 2. 작업 완료된 트리(wipRoot)의 자식부터 시작하여 DOM에 추가/업데이트
+            if (wipRoot.child) {
+                commitWork(wipRoot.child)
+            }
+
+
+            // 3. 작업 완료된 트리를 현재 트리(currentRoot)로 설정 (다음 렌더링 시 비교용)
+            currentRoot = wipRoot
+            wipRoot = null // 작업 중 트리 초기화
+            console.log("Commit Phase 완료. currentRoot updated.")
+        }
+
+        /**
+         * 개별 Fiber 노드의 변경사항을 실제 DOM에 적용합니다. (재귀적으로 호출)
+         * @param {object} fiber - 처리할 Fiber 노드
+         */
+        function commitWork(fiber) {
+            if (!fiber) {
+                return
+            }
+
+            // 1. 실제 DOM 작업을 수행할 부모 DOM 노드 찾기
+            // (함수 컴포넌트 등은 dom 노드가 없을 수 있으므로 부모 방향으로 탐색)
+            let domParentFiber = fiber.parent
+            while (domParentFiber && !domParentFiber.dom) {
+                domParentFiber = domParentFiber.parent
+            }
+            const domParent = domParentFiber ? domParentFiber.dom : null
+
+            // DOM 조작 로직은 부모 DOM이 있을 때만 실행
+            if (domParent) {
+                // 2. effectTag에 따라 DOM 작업 수행
+                if (fiber.effectTag === PLACEMENT && fiber.dom != null) {
+                    // console.log("Commit: Placing", fiber.dom, "into", domParent);
+                    domParent.appendChild(fiber.dom)
+                } else if (fiber.effectTag === UPDATE && fiber.dom != null) {
+                    // console.log("Commit: Updating", fiber.dom);
+                    updateDomProperties(fiber.dom, fiber.alternate.props, fiber.props)
+                } else if (fiber.effectTag === DELETION) {
+                    // console.log("Commit: Deleting", fiber);
+                    commitDeletion(fiber, domParent)
+                }
+            } else {
+                // console.log("Commit: Skipped DOM operation for fiber (no domParent found):", fiber.type);
+            }
+
+
+            // 3. 자식과 형제 Fiber에 대해 재귀적으로 커밋 수행
+            commitWork(fiber.child)
+            commitWork(fiber.sibling)
+
+            // 처리 후 effectTag 초기화 (선택적)
+            if (fiber.effectTag) fiber.effectTag = null
+        }
+
+        /**
+         * Fiber 노드 삭제를 처리합니다. (자식 DOM 노드까지 재귀적으로 제거)
+         * @param {object} fiber - 삭제할 Fiber 노드
+         * @param {Node} domParent - 부모 실제 DOM 노드
+         */
+        function commitDeletion(fiber, domParent) {
+            if (fiber.dom) {
+                // Fiber가 직접 DOM 노드를 가지고 있으면 바로 제거
+                // console.log("Commit: Removing DOM node:", fiber.dom);
+                if (domParent.contains(fiber.dom)) {
+                    domParent.removeChild(fiber.dom)
+                }
+            } else if (fiber.child) {
+                // Fiber가 DOM 노드가 없으면 (예: 함수 컴포넌트), 자식 노드를 대신 제거
+                // console.log("Commit: Removing child DOM for fiber:", fiber.type);
+                commitDeletion(fiber.child, domParent)
+            }
+        }
+
+        /**
+         * 실제 DOM 노드의 속성을 업데이트합니다. (Fiber 버전)
+         * 이전 Fiber(alternate)의 props와 새 Fiber의 props를 비교하여 업데이트합니다.
+         * @param {Node} dom - 업데이트할 실제 DOM 노드
+         * @param {object} prevProps - 이전 속성 객체 (alternate.props)
+         * @param {object} nextProps - 새로운 속성 객체 (fiber.props)
+         */
+        function updateDomProperties(dom, prevProps, nextProps) {
+            // console.log("Updating props for:", dom, "Prev:", prevProps, "Next:", nextProps);
+            // 이벤트 리스너 관련 로직 단순화/생략
+
+            // 1. 이전 속성 제거 또는 변경
+            Object.keys(prevProps)
+                .filter(name => name !== 'children' && name !== 'dom') // children과 dom 참조는 속성이 아님
+                .forEach(name => {
+                    const isEvent = name.startsWith("on")
+                    const isStyle = name === "style"
+                    const isGone = !(name in nextProps) // 새 props에 없는 속성인가?
+
+                    if (isEvent && (isGone || prevProps[name] !== nextProps[name])) {
+                        // TODO: 이벤트 리스너 제거
+                        // console.log(`Event listener remove needed for ${name}`);
+                    } else if (isStyle && (isGone || JSON.stringify(prevProps[name]) !== JSON.stringify(nextProps[name]))) {
+                        // 스타일 객체 처리 (여기선 여전히 단순 문자열로 가정)
+                        if (isGone) dom.removeAttribute('style')
+                        // else dom.setAttribute('style', nextProps[name]); // 이전 코드와 동일하게 유지
+                        // console.log("Style prop changed/removed");
+                    } else if (!isEvent && !isStyle && (isGone || prevProps[name] !== nextProps[name])) {
+                        if (name === 'nodeValue') {
+                            if (dom.nodeValue !== String(nextProps[name])) dom.nodeValue = String(nextProps[name])
+                        } else {
+                            dom.removeAttribute(name === 'className' ? 'class' : name)
+                            // console.log(`Removed attribute: ${name}`);
+                        }
+                    }
+                })
+
+            // 2. 새 속성 추가 또는 변경
+            Object.keys(nextProps)
+                .filter(name => name !== 'children' && name !== 'dom')
+                .forEach(name => {
+                    const isNew = !(name in prevProps)
+                    const isValueChanged = prevProps[name] !== nextProps[name]
+                    const isEvent = name.startsWith("on")
+                    const isStyle = name === "style"
+
+                    if (isEvent && (isNew || isValueChanged)) {
+                        // TODO: 이벤트 리스너 추가
+                        // console.log(`Event listener add/update needed for ${name}`);
+                    } else if (isStyle && (isNew || JSON.stringify(prevProps[name]) !== JSON.stringify(nextProps[name]))) {
+                        // 스타일 객체 처리 (단순 문자열 가정)
+                        // dom.setAttribute('style', nextProps[name]);
+                        // console.log("Style prop added/changed");
+                        // className으로 대체 테스트
+                        if (name === 'className') dom.className = nextProps[name]
+                        else dom.setAttribute(name === 'className' ? 'class' : name, nextProps[name])
+                    } else if (!isEvent && !isStyle && (isNew || isValueChanged)) {
+                        if (name === 'nodeValue') {
+                            if (dom.nodeValue !== String(nextProps[name])) dom.nodeValue = String(nextProps[name])
+                        } else {
+                            dom.setAttribute(name === 'className' ? 'class' : name, nextProps[name])
+                            // console.log(`Added/Updated attribute: ${name} = ${nextProps[name]}`);
+                        }
+                    }
+                })
+            // className 특별 처리 (다른 속성 설정 후 덮어쓰기 방지)
+            if ('className' in nextProps) {
+                dom.className = nextProps.className
+            } else if ('className' in prevProps) { // 이전엔 있었는데 지금 없으면 제거
+                dom.removeAttribute('class')
+            }
+        }
+
+        // --- Example Usage: Ticking Clock (동일) ---
+
+        const rootContainer = document.getElementById("root")
+
+        function tick() {
+            const time = new Date().toLocaleTimeString('ko-KR')
+            const seconds = new Date().getSeconds()
+            const isEvenSecond = seconds % 2 === 0
+
+            // 매번 새로운 VDOM 트리 생성
+            const clockElement = createElement(
+                "div",
+                { id: "container", className: "clock-container" },
+                createElement(
+                    "h1",
+                    { className: isEvenSecond ? 'title-color-blue' : 'title-color-red' },
+                    "현재 시간"
+                ),
+                createElement(
+                    "p",
+                    { className: "time-text" },
+                    `지금은 ${time} 입니다.`
+                ),
+                createElement(
+                    "small",
+                    null,
+                    `초: ${seconds}`
+                )
+            )
+
+            // 새로운 render 함수 호출
+            render(clockElement, rootContainer)
+        }
+
+        // 초기 렌더링 및 1초마다 업데이트 시작
+        console.log("Starting clock example (Fiber version)...")
+        tick() // 즉시 첫 렌더링
+        setInterval(tick, 1000) // 1초 간격으로 업데이트
+
+    </script>
+
+</body>
+
+</html>

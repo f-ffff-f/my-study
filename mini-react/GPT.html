@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Fiber 시뮬레이션 예제</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        #app {
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app"></div>
+    <button id="updateBtn">Fiber 업데이트</button>
+
+    <script>
+        // ★ 기본 가상 DOM 생성 함수 (React.createElement와 유사)
+        function createElement(type, props, ...children) {
+            return {
+                type,
+                props: props || {},
+                children: children.flat()
+            }
+        }
+
+        // ★ 전역 변수: Fiber 관련 상태
+        let nextUnitOfWork = null  // 다음 작업 단위
+        let currentRoot = null     // 현재 커밋된 fiber tree
+        let wipRoot = null         // 작업 중인 fiber tree (work in progress)
+        let deletions = []         // 나중에 삭제할 fiber (예제에서는 사용하지 않음)
+
+        // ★ 실제 DOM에 속성을 적용하는 함수
+        function updateDom(dom, prevProps, nextProps) {
+            // 이전 속성 중 새 속성에 없는 것은 제거
+            for (let name in prevProps) {
+                if (name !== "children" && !(name in nextProps)) {
+                    dom.removeAttribute(name)
+                }
+            }
+            // 새로운 속성 및 변경된 속성 설정
+            for (let name in nextProps) {
+                if (name !== "children") {
+                    dom.setAttribute(name, nextProps[name])
+                }
+            }
+        }
+
+        // ★ Fiber에서 사용할 실제 DOM 생성 함수
+        function createDom(fiber) {
+            const dom = (typeof fiber.type === "string")
+                ? document.createElement(fiber.type)
+                : document.createTextNode("")
+            updateDom(dom, {}, fiber.props)
+            return dom
+        }
+
+        // ★ Fiber 방식의 렌더링 시작: 작업 대상 fiber tree를 초기화
+        function renderFiber(vnode, container) {
+            wipRoot = {
+                dom: container,
+                props: { children: [vnode] },
+                alternate: currentRoot  // 나중에 기존 fiber tree와 비교할 때 사용 가능 (여기선 단순화)
+            }
+            deletions = []
+            nextUnitOfWork = wipRoot
+        }
+
+        // ★ Fiber의 단위 작업을 수행하는 함수:
+        //    1. 현재 fiber에 해당하는 실제 DOM 생성 (없다면)
+        //    2. 자식 가상 DOM을 Fiber 노드로 변환하여 연결
+        //    3. 다음 작업 단위(자식, 형제, 부모의 형제)를 반환
+        function performUnitOfWork(fiber) {
+            if (!fiber.dom) {  // 실제 DOM 생성 (최초 작업 시)
+                fiber.dom = createDom(fiber)
+            }
+
+            // 현재 fiber의 children(virtual DOM)을 Fiber 노드로 변환
+            const elements = fiber.props.children || []
+            let index = 0
+            let prevSibling = null
+            while (index < elements.length) {
+                const element = elements[index]
+                const newFiber = {
+                    type: element.type,
+                    props: element.props,
+                    parent: fiber,
+                    dom: null,
+                    alternate: null  // 여기선 이전 fiber와의 비교 생략
+                }
+                if (index === 0) {
+                    fiber.child = newFiber
+                } else {
+                    prevSibling.sibling = newFiber
+                }
+                prevSibling = newFiber
+                index++
+            }
+
+            // 다음 작업 단위를 반환: 자식이 있으면 자식, 없으면 형제나 부모의 형제 순으로
+            if (fiber.child) {
+                return fiber.child
+            }
+            let nextFiber = fiber
+            while (nextFiber) {
+                if (nextFiber.sibling) {
+                    return nextFiber.sibling
+                }
+                nextFiber = nextFiber.parent
+            }
+            return null
+        }
+
+        // ★ 모든 작업이 끝난 후, 새로운 fiber tree를 실제 DOM에 커밋하는 함수
+        function commitRoot() {
+            commitWork(wipRoot.child)
+            currentRoot = wipRoot
+            wipRoot = null
+        }
+
+        // ★ 실제 DOM에 fiber 노드를 순차적으로 추가하는 재귀 함수
+        function commitWork(fiber) {
+            if (!fiber) return
+            let domParentFiber = fiber.parent
+            // 부모 중 실제 DOM이 있는 노드를 찾음
+            while (!domParentFiber.dom) {
+                domParentFiber = domParentFiber.parent
+            }
+            const domParent = domParentFiber.dom
+            if (fiber.dom) {
+                domParent.appendChild(fiber.dom)
+            }
+            commitWork(fiber.child)
+            commitWork(fiber.sibling)
+        }
+
+        // ★ fiber 작업을 점진적으로 처리하기 위해 requestIdleCallback을 사용하는 workLoop 함수
+        function workLoop(deadline) {
+            let shouldYield = false
+            while (nextUnitOfWork && !shouldYield) {
+                nextUnitOfWork = performUnitOfWork(nextUnitOfWork)
+                shouldYield = deadline.timeRemaining() < 1
+            }
+            // 모든 작업이 완료되면 commit 진행
+            if (!nextUnitOfWork && wipRoot) {
+                commitRoot()
+            }
+            requestIdleCallback(workLoop)
+        }
+
+        // ★ workLoop 시작: fiber 작업이 idle time에 실행됨
+        requestIdleCallback(workLoop)
+
+        // ★ 예제: 초기 가상 DOM
+        const initialVNode = createElement(
+            "div",
+            { id: "container", style: "border:1px solid #000; padding:10px;" },
+            createElement("h1", null, "Fiber 시뮬레이션 예제"),
+            createElement("p", null, "초기 상태입니다."),
+            createElement("ul", null,
+                createElement("li", null, "항목 1"),
+                createElement("li", null, "항목 2")
+            )
+        )
+
+        // ★ 예제: 업데이트될 가상 DOM
+        const updatedVNode = createElement(
+            "div",
+            { id: "container", style: "border:1px solid #000; padding:10px; background:#e0ffe0;" },
+            createElement("h1", null, "Fiber 시뮬레이션 예제 (업데이트됨)"),
+            createElement("p", null, "업데이트된 상태입니다."),
+            createElement("ul", null,
+                createElement("li", null, "항목 1"),
+                createElement("li", null, "항목 2"),
+                createElement("li", null, "추가된 항목 3")
+            )
+        )
+
+        // ★ 초기 렌더링: Fiber 방식으로 virtual DOM을 container에 렌더링
+        const app = document.getElementById("app")
+        renderFiber(initialVNode, app)
+
+        // ★ 업데이트 버튼: 클릭 시 새로운 virtual DOM으로 fiber tree를 다시 생성하여 업데이트 시도
+        document.getElementById("updateBtn").addEventListener("click", function () {
+            renderFiber(updatedVNode, app)
+        });
+    </script>
+</body>
+
+</html>

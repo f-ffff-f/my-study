@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailwind CSS 테스트</title>
+    
+    <!-- 여기에 당신의 Tailwind CSS가 연결될 것입니다 -->
+    <link rel="stylesheet" href="./your-tailwind.css">
+    
+    <!-- 또는 CDN 사용 (개발용, 실제 구현에는 직접 빌드한 CSS 사용 권장) -->
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <header class="bg-white shadow-md p-4 mb-6">
+        <div class="container mx-auto">
+            <h1 class="text-2xl font-bold text-gray-800">Tailwind CSS 테스트</h1>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4">
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">색상 유틸리티</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-500 text-white p-4 rounded">bg-blue-500</div>
+                <div class="bg-red-500 text-white p-4 rounded">bg-red-500</div>
+                <div class="bg-green-500 text-white p-4 rounded">bg-green-500</div>
+                <div class="bg-yellow-500 text-white p-4 rounded">bg-yellow-500</div>
+                <div class="bg-purple-500 text-white p-4 rounded">bg-purple-500</div>
+                <div class="bg-pink-500 text-white p-4 rounded">bg-pink-500</div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">간격 유틸리티</h2>
+            <div class="space-y-4">
+                <div class="bg-white p-1 border border-gray-300 rounded">p-1</div>
+                <div class="bg-white p-2 border border-gray-300 rounded">p-2</div>
+                <div class="bg-white p-4 border border-gray-300 rounded">p-4</div>
+                <div class="bg-white p-8 border border-gray-300 rounded">p-8</div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">레이아웃 유틸리티</h2>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="bg-blue-100 p-4 flex-1 rounded">Flex 아이템 1</div>
+                    <div class="bg-blue-200 p-4 flex-1 rounded">Flex 아이템 2</div>
+                    <div class="bg-blue-300 p-4 flex-1 rounded">Flex 아이템 3</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">타이포그래피 유틸리티</h2>
+            <div class="bg-white p-4 rounded shadow space-y-4">
+                <p class="text-xs">text-xs 크기</p>
+                <p class="text-sm">text-sm 크기</p>
+                <p class="text-base">text-base 크기</p>
+                <p class="text-lg">text-lg 크기</p>
+                <p class="text-xl">text-xl 크기</p>
+                <p class="text-2xl">text-2xl 크기</p>
+                <p class="font-bold">font-bold</p>
+                <p class="font-semibold">font-semibold</p>
+                <p class="italic">italic</p>
+                <p class="underline">underline</p>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">반응형 유틸리티</h2>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="bg-red-500 md:bg-blue-500 lg:bg-green-500 p-4 text-white rounded">
+                    화면 크기를 조절해보세요!
+                    <ul>
+                        <li>기본: 빨간색</li>
+                        <li>md: 파란색</li>
+                        <li>lg: 초록색</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">상태 변형자</h2>
+            <div class="bg-white p-4 rounded shadow space-y-4">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    호버 효과
+                </button>
+                <input type="text" placeholder="포커스 효과" class="border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 rounded p-2 w-full">
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">그룹 변형자</h2>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="group border border-gray-300 p-4 rounded hover:bg-gray-100">
+                    <h3 class="font-bold">그룹에 호버해보세요</h3>
+                    <p class="text-gray-600 group-hover:text-black">이 텍스트는 그룹에 호버할 때 색상이 변합니다.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white p-4 mt-8">
+        <div class="container mx-auto">
+            <p>© 2025 당신의 Tailwind CSS 구현 프로젝트</p>
+        </div>
+    </footer>
+</body>
+</html>

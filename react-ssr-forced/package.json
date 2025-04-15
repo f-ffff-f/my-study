@@ -1,0 +1,29 @@
+{
+    "name": "@my-study/react-ssr-forced",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "babel-node --extensions '.js,.jsx' server.js"
+    },
+    "keywords": [],
+    "author": "yu ganghyeon",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "express": "^5.1.0",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.26.10",
+        "@babel/node": "^7.26.0",
+        "@babel/preset-env": "^7.26.9",
+        "@babel/preset-react": "^7.26.3",
+        "@babel/register": "^7.25.9",
+        "babel-loader": "^10.0.0",
+        "nodemon": "^3.1.9",
+        "webpack": "^5.99.5",
+        "webpack-cli": "^6.0.1"
+    }
+}

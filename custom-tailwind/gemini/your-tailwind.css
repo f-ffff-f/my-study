@@ -1,0 +1,105 @@
+/* Generated CSS - Purged */
+
+/* Basic Reset / Preflight (Always include) */
+*, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #d1d5db; }
+html { line-height: 1.5; -webkit-text-size-adjust: 100%; font-feature-settings: normal; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
+body { margin: 0; }
+
+/* CSS Variable Defaults (Always include for safety) */
+:root {
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  --tw-ring-color: rgba(59, 130, 246, 0.5);
+  --tw-ring-offset-width: 0px;
+  --tw-space-y-reverse: 0;
+  --tw-space-x-reverse: 0;
+}
+
+/* Base Utilities */
+.bg-white { background-color: #ffffff; }
+.bg-gray-100 { background-color: #f3f4f6; }
+.bg-gray-800 { background-color: #1f2937; }
+.bg-blue-100 { background-color: #dbeafe; }
+.bg-blue-200 { background-color: #bfdbfe; }
+.bg-blue-300 { background-color: #93c5fd; }
+.bg-blue-500 { background-color: #3b82f6; }
+.bg-red-500 { background-color: #ef4444; }
+.bg-green-500 { background-color: #22c55e; }
+.bg-yellow-500 { background-color: #eab308; }
+.bg-purple-500 { background-color: #a855f7; }
+.bg-pink-500 { background-color: #ec4899; }
+.text-white { color: #ffffff; }
+.text-gray-600 { color: #4b5563; }
+.text-gray-800 { color: #1f2937; }
+.border-gray-300 { border-color: #d1d5db; }
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.p-4 { padding: 1rem; }
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.p-8 { padding: 2rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-8 { margin-top: 2rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+.gap-4 { gap: 1rem; }
+.space-y-4> :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(1rem * var(--tw-space-y-reverse)); }
+.min-h-screen { min-height: 100vh; }
+.w-full { width: 100%; }
+.container { width: 100%; margin-right: auto; margin-left: auto; padding-right: 1rem; padding-left: 1rem; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.grid { display: grid; }
+.flex-1 { flex: 1 1 0%; }
+.italic { font-style: italic; }
+.underline { text-decoration-line: underline; }
+.border { border-width: 1px; }
+.group {}
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.rounded { border-radius: 0.25rem; }
+.shadow-md { --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); --tw-shadow-colored: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow); }
+
+/* Responsive Variants */
+@media (min-width: 768px) {
+  .md\:bg-blue-500 { background-color: #3b82f6; }
+  .md\:flex-row { flex-direction: row; }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .container { max-width: 768px; } 
+  }
+@media (min-width: 1024px) {
+  .lg\:bg-green-500 { background-color: #22c55e; }
+  .container { max-width: 1024px; } 
+  }
+
+/* State Variants */
+.hover\:bg-gray-100:hover { background-color: #f3f4f6; }
+.hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+.hover\:bg-gray-100:hover { background-color: #f3f4f6; }
+.focus\:border-blue-500:focus { border-color: #3b82f6; }
+.focus\:ring:focus { 
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+.focus\:ring-blue-200:focus { --tw-ring-color: #bfdbfe; }
+.group:hover .group-hover\:text-black { color: #000000; }
