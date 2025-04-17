@@ -1,9 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
-import Provider from './custom-redux/Provider.tsx'
-import store from './custom-redux/lib/store.ts' // 스토어 인스턴스 가져오기
+import App from './App'
+import Provider from './custom-redux/Provider'
+import store from './custom-redux/lib/store' // 스토어 인스턴스 가져오기
 
 // 1. DOM에서 root 요소를 찾습니다
 // 2. React의 createRoot API를 사용하여 React 루트를 생성합니다
