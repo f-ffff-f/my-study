@@ -29,7 +29,7 @@ class EventBus {
     console.log(`[구독] "${topic}" 주제에 새로운 구독자가 등록되었습니다.`)
   }
 
-  // 특정 주제로 메시지를 발행하는 메서드 (우체국에 편지 보내기)
+  // 특정 주제로 메시지를 발행하는 메서드 (우체국이 구독자에게 편지 보내기)
   publish(topic: string, data?: any): void {
     // 해당 주제에 구독자가 없으면 아무것도 안 함
     if (!this.topics[topic] || this.topics[topic].length === 0) {
@@ -48,7 +48,7 @@ class EventBus {
     })
   }
 
-  // (선택적) 구독 취소 메서드
+  // 구독 취소 메서드
   unsubscribe(topic: string, listenerToRemove: ListenerFunction): void {
     if (!this.topics[topic]) {
       return // 해당 주제 없음

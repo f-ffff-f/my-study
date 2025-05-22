@@ -1,17 +1,17 @@
-enum EventType {
+type ListenerFunction = (data: any) => void
+
+enum Topic {
   NEW_VIDEO = 'NEW_VIDEO',
   LIVE_STREAMING = 'LIVE_STREAMING',
 }
 
-type Listener = (data: any) => void
-
 type ListenerMap = {
-  [key in EventType]: Listener[] | Listener | undefined
+  [key in Topic]: ListenerFunction[] | ListenerFunction | undefined
 }
 
-interface Person {
+interface Observer {
   name: string
-  notificationConfig: ListenerMap
+  notificationHandlers: ListenerMap
 }
 
 interface NewVideoPayload {
@@ -25,24 +25,28 @@ interface LiveStreamingPayload {
   platform: string
 }
 
+/**
+ * Subject(주체)
+ */
 class Youtuber {
-  private observers: Person[] = []
+  // 구독자별로 함수 목록을 관리
+  private observers: Observer[] = []
 
-  addObserver(observer: Person) {
+  addObserver(observer: Observer) {
     console.log(
       `[Youtuber] addObserver: 구독자 ${observer.name}. ${Object.keys(
-        observer.notificationConfig
+        observer.notificationHandlers
       ).join(', ')} 알림 설정`
     )
     this.observers.push(observer)
   }
 
-  notify(type: EventType.NEW_VIDEO, data: NewVideoPayload): void
-  notify(type: EventType.LIVE_STREAMING, data: LiveStreamingPayload): void
+  notify(topic: Topic.NEW_VIDEO, data: NewVideoPayload): void
+  notify(topic: Topic.LIVE_STREAMING, data: LiveStreamingPayload): void
 
-  notify(type: EventType, data: any): void {
+  notify(topic: Topic, data: any): void {
     this.observers.forEach(observer => {
-      const listener = observer.notificationConfig[type]
+      const listener = observer.notificationHandlers[topic]
       if (Array.isArray(listener)) {
         listener.forEach(_listener => (_listener as (d: any) => void)(data))
       } else if (typeof listener === 'function') {
@@ -52,10 +56,13 @@ class Youtuber {
   }
 }
 
-const alice: Person = {
+/**
+ * Observer(관찰자)
+ */
+const alice: Observer = {
   name: 'Alice',
-  notificationConfig: {
-    [EventType.NEW_VIDEO]: [
+  notificationHandlers: {
+    [Topic.NEW_VIDEO]: [
       (data: any) => {
         console.log(`[Alice][NEW_VIDEO] Mail: 새 영상 '${data.title}' 업로드됨`)
       },
@@ -65,7 +72,7 @@ const alice: Person = {
         )
       },
     ],
-    [EventType.LIVE_STREAMING]: (data: any) => {
+    [Topic.LIVE_STREAMING]: (data: any) => {
       console.log(
         `[Alice][LIVE_STREAMING] Push notification: 실시간 스트리밍 ${data.startTime} 시작`
       )
@@ -73,10 +80,10 @@ const alice: Person = {
   },
 }
 
-const bob: Person = {
+const bob: Observer = {
   name: 'Bob',
-  notificationConfig: {
-    [EventType.NEW_VIDEO]: [
+  notificationHandlers: {
+    [Topic.NEW_VIDEO]: [
       (data: NewVideoPayload) => {
         console.log(`[Bob][NEW_VIDEO] Mail: 새 영상 '${data.title}' 업로드됨`)
       },
@@ -86,7 +93,7 @@ const bob: Person = {
         )
       },
     ],
-    [EventType.LIVE_STREAMING]: (data: LiveStreamingPayload) => {
+    [Topic.LIVE_STREAMING]: (data: LiveStreamingPayload) => {
       console.log(
         `[Bob][LIVE_STREAMING] Push notification: 실시간 스트리밍 ${data.startTime} 시작`
       )
@@ -94,10 +101,10 @@ const bob: Person = {
   },
 }
 
-const charlie: Person = {
+const charlie: Observer = {
   name: 'Charlie',
-  notificationConfig: {
-    [EventType.NEW_VIDEO]: [
+  notificationHandlers: {
+    [Topic.NEW_VIDEO]: [
       (data: NewVideoPayload) => {
         console.log(
           `[Charlie][NEW_VIDEO] Mail: 새 영상 '${data.title}' 업로드됨`
@@ -119,7 +126,7 @@ const charlie: Person = {
         )
       },
     ],
-    [EventType.LIVE_STREAMING]: (data: LiveStreamingPayload) => {
+    [Topic.LIVE_STREAMING]: (data: LiveStreamingPayload) => {
       console.log(
         `[Charlie][LIVE_STREAMING] Push notification: 실시간 스트리밍 ${data.startTime} 시작`
       )
@@ -133,12 +140,12 @@ youtuber.addObserver(alice)
 youtuber.addObserver(bob)
 youtuber.addObserver(charlie)
 
-youtuber.notify(EventType.NEW_VIDEO, {
+youtuber.notify(Topic.NEW_VIDEO, {
   title: 'hello world',
   url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   uploader: 'John Doe',
 })
-youtuber.notify(EventType.LIVE_STREAMING, {
+youtuber.notify(Topic.LIVE_STREAMING, {
   startTime: new Date(),
   platform: 'YouTube',
 })
